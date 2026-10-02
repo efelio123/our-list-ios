@@ -1,0 +1,8 @@
+OurList.xcodeproj/
+*.xcworkspace/xcuserdata/
+*.xcodeproj/xcuserdata/
+Config/**/GoogleService-Info.plist
+Config/list-code.txt
+firebase/.firebaserc
+MAC-HANDOFF.md
+.DS_Store
