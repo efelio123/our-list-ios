@@ -21,6 +21,8 @@ targets:
       - path: Shared
       - path: Config/App/GoogleService-Info.plist
         buildPhase: resources
+      - path: Config/list-code.txt
+        buildPhase: resources
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.efelio123.ourlist
@@ -43,6 +45,8 @@ targets:
       - path: Widget
       - path: Shared
       - path: Config/Widget/GoogleService-Info.plist
+        buildPhase: resources
+      - path: Config/list-code.txt
         buildPhase: resources
     info:
       path: Widget/Info.plist

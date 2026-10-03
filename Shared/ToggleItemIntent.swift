@@ -1,4 +1,5 @@
 import AppIntents
+import WidgetKit
 
 struct ToggleItemIntent: AppIntent {
     static var title: LocalizedStringResource = "Check off task"
@@ -19,6 +20,7 @@ struct ToggleItemIntent: AppIntent {
     func perform() async throws -> some IntentResult {
         let code = try FirebaseList.normalizedCode(listCode)
         try await FirebaseList.setCompleted(completed, itemID: itemID, code: code)
+        WidgetCenter.shared.reloadTimelines(ofKind: "OurListWidget")
         return .result()
     }
 }

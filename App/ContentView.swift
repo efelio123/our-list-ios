@@ -6,18 +6,18 @@ import WidgetKit
 final class ListViewModel: ObservableObject {
     @Published var items: [TodoItem] = []
     @Published var errorMessage: String?
-    @Published var isBusy = false
+    @Published var isBusy = true
     private var listener: ListenerRegistration?
     private(set) var code: String?
 
-    func connect(_ value: String) async {
+    func connect() async {
         listener?.remove()
         listener = nil
         items = []
         isBusy = true
         defer { isBusy = false }
         do {
-            let normalized = try FirebaseList.normalizedCode(value)
+            let normalized = try FirebaseList.bundledCode()
             try await FirebaseList.verifyList(normalized)
             code = normalized
             errorMessage = nil
@@ -55,18 +55,10 @@ final class ListViewModel: ObservableObject {
         catch { errorMessage = error.localizedDescription }
     }
 
-    func disconnect() {
-        listener?.remove()
-        listener = nil
-        code = nil
-        items = []
-    }
 }
 
 struct ContentView: View {
-    @AppStorage("listCode") private var savedCode = ""
     @StateObject private var model = ListViewModel()
-    @State private var enteredCode = ""
     @State private var newItem = ""
 
     var body: some View {
@@ -76,20 +68,6 @@ struct ContentView: View {
                 else { listView }
             }
             .navigationTitle("Our List")
-            .toolbar {
-                if model.code != nil {
-                    ToolbarItem(placement: .topBarTrailing) {
-                        Menu {
-                            ShareLink(item: savedCode) { Label("Share list code", systemImage: "square.and.arrow.up") }
-                            Button("Change list", systemImage: "arrow.left.arrow.right") {
-                                savedCode = ""
-                                enteredCode = ""
-                                model.disconnect()
-                            }
-                        } label: { Image(systemName: "ellipsis.circle") }
-                    }
-                }
-            }
             .alert("Couldn’t update list", isPresented: Binding(
                 get: { model.errorMessage != nil },
                 set: { if !$0 { model.errorMessage = nil } }
@@ -99,31 +77,23 @@ struct ContentView: View {
                 Text(model.errorMessage ?? "Please try again.")
             }
             .task {
-                guard !savedCode.isEmpty, model.code == nil else { return }
-                await model.connect(savedCode)
+                guard model.code == nil else { return }
+                await model.connect()
             }
         }
     }
 
     private var setupView: some View {
-        Form {
-            Section("Connect to our list") {
-                TextField("32-character list code", text: $enteredCode)
-                    .textInputAutocapitalization(.never)
-                    .autocorrectionDisabled()
-                    .font(.system(.body, design: .monospaced))
-                Button("Connect") {
-                    Task {
-                        await model.connect(enteredCode)
-                        if let code = model.code { savedCode = code }
-                    }
-                }
-                .disabled(model.isBusy || enteredCode.isEmpty)
-            } footer: {
-                Text("Use the same private list code on both phones. You will receive it after Firebase setup.")
+        VStack(spacing: 16) {
+            if model.isBusy {
+                ProgressView("Connecting to Our List…")
+            } else {
+                Text("Couldn’t connect to Our List")
+                    .font(.headline)
+                Button("Try again") { Task { await model.connect() } }
             }
-            if model.isBusy { ProgressView() }
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     private var listView: some View {
@@ -145,11 +115,8 @@ struct ContentView: View {
                 ForEach(model.items.filter(\.completed)) { item in row(item) }
             }
             Section {
-                Text("Widget setup: add the Our List widget to your Home Screen, long press it, choose Edit Widget, and enter this list code.")
-                Text(savedCode)
-                    .font(.system(.footnote, design: .monospaced))
-                    .textSelection(.enabled)
-            } header: { Text("List code") }
+                Text("Add the Our List widget to your Home Screen. It connects to this list automatically.")
+            } header: { Text("Home Screen widget") }
         }
     }
 

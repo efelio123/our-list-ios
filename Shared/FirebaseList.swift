@@ -25,12 +25,14 @@ enum ListError: LocalizedError {
     case invalidCode
     case missingList
     case missingFirebaseConfiguration
+    case missingListCode
 
     var errorDescription: String? {
         switch self {
         case .invalidCode: "Enter a 32-character list code."
         case .missingList: "That list was not found. Check the code and try again."
         case .missingFirebaseConfiguration: "Add GoogleService-Info.plist to both targets."
+        case .missingListCode: "This build is missing its private list configuration."
         }
     }
 }
@@ -49,6 +51,13 @@ enum FirebaseList {
             throw ListError.invalidCode
         }
         return code
+    }
+
+    static func bundledCode() throws -> String {
+        guard let url = Bundle.main.url(forResource: "list-code", withExtension: "txt") else {
+            throw ListError.missingListCode
+        }
+        return try normalizedCode(String(contentsOf: url, encoding: .utf8))
     }
 
     static func signIn() async throws {

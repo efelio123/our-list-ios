@@ -1,16 +1,5 @@
 import SwiftUI
 import WidgetKit
-import AppIntents
-
-struct WidgetSetupIntent: WidgetConfigurationIntent {
-    static var title: LocalizedStringResource = "Our List"
-    static var description = IntentDescription("Show your shared list.")
-
-    @Parameter(title: "List code", description: "Copy the code from the Our List app")
-    var listCode: String
-
-    init() { listCode = "" }
-}
 
 struct ListEntry: TimelineEntry {
     let date: Date
@@ -19,30 +8,29 @@ struct ListEntry: TimelineEntry {
     let message: String?
 }
 
-struct ListProvider: AppIntentTimelineProvider {
+struct ListProvider: TimelineProvider {
     func placeholder(in context: Context) -> ListEntry {
         ListEntry(date: .now, code: "", items: [], message: nil)
     }
 
-    func snapshot(for configuration: WidgetSetupIntent, in context: Context) async -> ListEntry {
-        await load(configuration.listCode)
+    func getSnapshot(in context: Context, completion: @escaping (ListEntry) -> Void) {
+        Task { completion(await load()) }
     }
 
-    func timeline(for configuration: WidgetSetupIntent, in context: Context) async -> Timeline<ListEntry> {
-        let entry = await load(configuration.listCode)
-        return Timeline(entries: [entry], policy: .after(Date().addingTimeInterval(15 * 60)))
-    }
-
-    private func load(_ value: String) async -> ListEntry {
-        guard !value.isEmpty else {
-            return ListEntry(date: .now, code: "", items: [], message: "Edit the widget and enter your list code.")
+    func getTimeline(in context: Context, completion: @escaping (Timeline<ListEntry>) -> Void) {
+        Task {
+            let entry = await load()
+            completion(Timeline(entries: [entry], policy: .after(Date().addingTimeInterval(15 * 60))))
         }
+    }
+
+    private func load() async -> ListEntry {
         do {
-            let code = try FirebaseList.normalizedCode(value)
+            let code = try FirebaseList.bundledCode()
             let items = try await FirebaseList.fetchItems(code)
             return ListEntry(date: .now, code: code, items: items, message: nil)
         } catch {
-            return ListEntry(date: .now, code: value, items: [], message: "Couldn’t load list. Check your connection and code.")
+            return ListEntry(date: .now, code: "", items: [], message: "Couldn’t load list. Check your connection.")
         }
     }
 }
@@ -92,7 +80,7 @@ struct OurListWidget: Widget {
     let kind = "OurListWidget"
 
     var body: some WidgetConfiguration {
-        AppIntentConfiguration(kind: kind, intent: WidgetSetupIntent.self, provider: ListProvider()) { entry in
+        StaticConfiguration(kind: kind, provider: ListProvider()) { entry in
             OurListWidgetView(entry: entry)
         }
         .configurationDisplayName("Our List")
