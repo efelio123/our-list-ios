@@ -8,6 +8,7 @@ settings:
     SWIFT_VERSION: "5.9"
     TARGETED_DEVICE_FAMILY: "1"
     CODE_SIGN_STYLE: Automatic
+    CURRENT_PROJECT_VERSION: "1"
 packages:
   Firebase:
     url: https://github.com/firebase/firebase-ios-sdk.git

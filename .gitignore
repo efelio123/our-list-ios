@@ -1,4 +1,5 @@
 OurList.xcodeproj/
+Widget/Info.plist
 *.xcworkspace/xcuserdata/
 *.xcodeproj/xcuserdata/
 Config/**/GoogleService-Info.plist
