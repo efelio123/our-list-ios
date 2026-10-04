@@ -58,8 +58,11 @@ final class ListViewModel: ObservableObject {
 }
 
 struct ContentView: View {
+    @Environment(\.scenePhase) private var scenePhase
     @StateObject private var model = ListViewModel()
     @State private var newItem = ""
+    @State private var widgetIsInstalled: Bool?
+    @FocusState private var taskFieldIsFocused: Bool
 
     var body: some View {
         NavigationStack {
@@ -79,6 +82,10 @@ struct ContentView: View {
             .task {
                 guard model.code == nil else { return }
                 await model.connect()
+            }
+            .task { await refreshWidgetStatus() }
+            .onChange(of: scenePhase) { _, phase in
+                if phase == .active { Task { await refreshWidgetStatus() } }
             }
         }
     }
@@ -102,6 +109,7 @@ struct ContentView: View {
                 HStack {
                     TextField("Add a task", text: $newItem)
                         .submitLabel(.done)
+                        .focused($taskFieldIsFocused)
                         .onSubmit { addItem() }
                     Button(action: addItem) { Image(systemName: "plus.circle.fill") }
                         .disabled(newItem.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
@@ -115,14 +123,37 @@ struct ContentView: View {
                 ForEach(model.items.filter(\.completed)) { item in row(item) }
             }
             Section {
-                Text("Add the Our List widget to your Home Screen. It connects to this list automatically.")
+                Text(widgetMessage)
             } header: { Text("Home Screen widget") }
+        }
+        .scrollDismissesKeyboard(.immediately)
+        .onTapGesture { taskFieldIsFocused = false }
+    }
+
+    private var widgetMessage: String {
+        switch widgetIsInstalled {
+        case .some(true):
+            "Our List widget is added. Check off tasks directly there; open this app to add or manage them."
+        case .some(false):
+            "Add Our List to your Home Screen to see and check off tasks. Touch and hold an empty area, open the widget picker, and search for Our List."
+        case .none:
+            "You can add Our List to your Home Screen to see and check off tasks without opening the app."
+        }
+    }
+
+    private func refreshWidgetStatus() async {
+        do {
+            let widgets = try await WidgetCenter.shared.currentConfigurations()
+            widgetIsInstalled = widgets.contains { $0.kind == "OurListWidget" }
+        } catch {
+            widgetIsInstalled = nil
         }
     }
 
     private func row(_ item: TodoItem) -> some View {
         HStack(spacing: 12) {
             Button {
+                taskFieldIsFocused = false
                 Task { await model.toggle(item) }
             } label: {
                 Image(systemName: item.completed ? "checkmark.circle.fill" : "circle")
@@ -133,8 +164,10 @@ struct ContentView: View {
             Text(item.title)
                 .strikethrough(item.completed)
                 .foregroundStyle(item.completed ? .secondary : .primary)
+                .onTapGesture { taskFieldIsFocused = false }
             Spacer()
             Button(role: .destructive) {
+                taskFieldIsFocused = false
                 Task { await model.delete(item) }
             } label: { Image(systemName: "trash") }
                 .buttonStyle(.plain)
@@ -146,6 +179,7 @@ struct ContentView: View {
         let title = newItem.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !title.isEmpty else { return }
         newItem = ""
+        taskFieldIsFocused = false
         Task { await model.add(title) }
     }
 }

@@ -8,6 +8,8 @@ Native SwiftUI app and interactive WidgetKit widget backed by Firebase Authentic
 - Add, check off, and delete tasks in the app. The open app receives Firestore updates from the other phone automatically.
 - Check off visible tasks directly in the medium or large Home Screen widget. Tapping a checkbox writes to Firestore and WidgetKit reloads that widget.
 - The widget fetches remote changes when iOS requests a new timeline. Its 15-minute refresh policy is a request to iOS, not a guarantee. There is no push notification capability in this free-signing version.
+- The app checks whether its widget has been added and updates the setup hint when you return from the Home Screen.
+- Scrolling the task list or tapping outside the task field dismisses the keyboard.
 
 The list code grants access to the list. Anyone who extracts it from a signed app build or otherwise learns it and can authenticate anonymously to your Firebase project could read or change that list. Distribute the build only to your two phones. The code is intentionally random and impractical to guess. Firestore rules prevent phones from creating more lists. If the code leaks, create a new list and delete the old one in the Firebase console. Firebase anonymous sign-in creates a separate account for each app installation and widget extension. Those accounts may change when the weekly installed app expires or is reinstalled; access remains tied to the list code, so the list survives reinstalling.
 
