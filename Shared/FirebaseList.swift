@@ -38,6 +38,7 @@ enum ListError: LocalizedError {
 }
 
 enum FirebaseList {
+    @MainActor
     static func configure() throws {
         guard Bundle.main.path(forResource: "GoogleService-Info", ofType: "plist") != nil else {
             throw ListError.missingFirebaseConfiguration
@@ -61,7 +62,7 @@ enum FirebaseList {
     }
 
     static func signIn() async throws {
-        try configure()
+        try await configure()
         if Auth.auth().currentUser != nil { return }
         _ = try await Auth.auth().signInAnonymously()
     }

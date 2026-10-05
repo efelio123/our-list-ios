@@ -29,6 +29,7 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.efelio123.ourlist
         GENERATE_INFOPLIST_FILE: YES
         INFOPLIST_KEY_CFBundleDisplayName: Our List
+        INFOPLIST_KEY_CFBundleShortVersionString: "1.0"
         INFOPLIST_KEY_UILaunchScreen_Generation: YES
     dependencies:
       - package: Firebase

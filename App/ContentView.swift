@@ -122,26 +122,28 @@ struct ContentView: View {
             Section("Done") {
                 ForEach(model.items.filter(\.completed)) { item in row(item) }
             }
-            Section {
-                Text(widgetMessage)
-            } header: { Text("Home Screen widget") }
+            if widgetIsInstalled == false {
+                Section {
+                    Text(widgetMessage)
+                } header: { Text("Home Screen widget") }
+            }
         }
         .scrollDismissesKeyboard(.immediately)
         .onTapGesture { taskFieldIsFocused = false }
     }
 
     private var widgetMessage: String {
-        switch widgetIsInstalled {
-        case .some(true):
-            "Our List widget is added. Check off tasks directly there; open this app to add or manage them."
-        case .some(false):
-            "Add Our List to your Home Screen to see and check off tasks. Touch and hold an empty area, open the widget picker, and search for Our List."
-        case .none:
-            "You can add Our List to your Home Screen to see and check off tasks without opening the app."
-        }
+        "Add Our List to your Home Screen to see and check off tasks. Touch and hold an empty area, open the widget picker, and search for Our List."
     }
 
     private func refreshWidgetStatus() async {
+        guard #available(iOS 18.0, *) else {
+            // WidgetCenter.currentConfigurations() is only available on iOS 18.
+            // Keep the general widget setup guidance on earlier deployment targets.
+            widgetIsInstalled = nil
+            return
+        }
+
         do {
             let widgets = try await WidgetCenter.shared.currentConfigurations()
             widgetIsInstalled = widgets.contains { $0.kind == "OurListWidget" }
